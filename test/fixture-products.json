@@ -1,0 +1,54 @@
+{
+  "products": [
+    {
+      "id": 10592436257101,
+      "title": "Carlisle Trine IP65 Polished Solid Brass Wall Light",
+      "handle": "carlisle-trine-ip65-polished-solid-brass-wall-light",
+      "body_html": "<p>The salt air catches the gleaming surface as you approach the weathered jetty. IP65 rated for outdoor and bathroom use.</p>",
+      "vendor": "Soho Lighting",
+      "product_type": "Wall Light",
+      "tags": ["bathroom", "indoor", "outdoor", "outdoor-wall", "soho-lighting", "wall", "wall-lights", "ip65"],
+      "variants": [
+        { "id": 53595805188429, "title": "Default Title", "option1": "Default Title", "price": "130.00", "available": true, "sku": "LT-SH-11-WLT357-BRP" }
+      ]
+    },
+    {
+      "id": 10592436126029,
+      "title": "Aged Brass 2 Gang 20A 2 Way Toggle Switch",
+      "handle": "aged-brass-2-gang-20a-2-way-toggle-switch",
+      "body_html": "<p>There's something deeply satisfying about the weighted click of a solid brass toggle.</p>",
+      "vendor": "Soho Lighting",
+      "product_type": "Sockets & Switches",
+      "tags": ["indoor", "sockets-switches", "soho-lighting"],
+      "variants": [
+        { "id": 53616137503053, "title": "Ball Toggle in Brass", "option1": "Ball Toggle in Brass", "price": "98.00", "available": true, "sku": "SS-SH-ML-LTS302-KV" },
+        { "id": 53616161259853, "title": "Paddle Toggle in Brass", "option1": "Paddle Toggle in Brass", "price": "98.00", "available": false, "sku": "SS-SH-ME-LTS302-KV" },
+        { "id": 53616166109517, "title": "Classic Toggle in Brass", "option1": "Classic Toggle in Brass", "price": "98.00", "available": true, "sku": "SS-SH-MT-LTS302-KV" }
+      ]
+    },
+    {
+      "id": 10592436388173,
+      "title": "Natural Brass 2 Gang 13A Socket 65W USB-C Charging",
+      "handle": "natural-brass-2-gang-13a-socket-65w-usb-c-charging",
+      "body_html": "<p>The seamless integration of power and elegance, with fast USB-C charging.</p>",
+      "vendor": "Soho Lighting",
+      "product_type": "Sockets & Switches",
+      "tags": ["indoor", "sockets-switches", "soho-lighting", "usb"],
+      "variants": [
+        { "id": 53595805319501, "title": "Default Title", "option1": "Default Title", "price": "154.00", "available": false, "sku": "SS-SH-MP-SKT215-KBB" }
+      ]
+    },
+    {
+      "id": 10592436191565,
+      "title": "Carlisle Grid Prismatic Glass IP65 Solid Brass Bulkhead",
+      "handle": "carlisle-grid-prismatic-glass-ip65-solid-brass-bulkhead",
+      "body_html": "<p>Golden light cuts through the prismatic glass, casting geometric shadows.</p>",
+      "vendor": "Soho Lighting",
+      "product_type": "Wall Light",
+      "tags": ["bathroom", "indoor", "outdoor", "outdoor-wall", "soho-lighting", "wall", "wall-lights", "ip65"],
+      "variants": [
+        { "id": 53595805122893, "title": "Default Title", "option1": "Default Title", "price": "175.00", "available": true, "sku": "LT-SH-11-WLT350-BRP" }
+      ]
+    }
+  ]
+}
