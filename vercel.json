@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/refresh-catalog",
-      "schedule": "0 * * * *"
+      "schedule": "0 0 * * *"
     }
   ]
 }
