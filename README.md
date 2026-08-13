@@ -15,10 +15,11 @@ functions.
 
 | Method | Path | Purpose |
 | ------ | ---- | ------- |
-| `POST` | `/api/vapi-tool` | Tool-call endpoint Vapi hits during a live call. |
+| `POST` | `/api/vapi-tool` | `lookup_product` tool-call endpoint — live product price/stock/specs. |
+| `POST` | `/api/vapi-facts` | `lookup_policy` tool-call endpoint — delivery, returns, lead times, warranty. |
 | `POST` | `/api/shopify-webhook` | Shopify `products/create` & `products/update` webhook → refresh cache. |
 | `GET/POST` | `/api/refresh-catalog` | Scheduled/manual catalog re-sync (Vercel Cron). |
-| `GET` | `/api/health` | Liveness + cache status. |
+| `GET` | `/api/health` | Liveness + cache/facts status. |
 
 ### `POST /api/vapi-tool`
 
@@ -42,6 +43,31 @@ The `result` is a short, spoken-language sentence (price, in/out of stock, key
 specs) — never raw JSON or HTML, never a line break. Searches product `title`,
 `handle`, `product_type`, `tags` and `vendor`. A miss returns a graceful
 "could you describe it differently?" prompt rather than an error.
+
+### `POST /api/vapi-facts`
+
+Same Vapi `ServerMessageToolCalls` shape and same **HTTP 200 always** contract
+as `/api/vapi-tool`, but answers company-policy questions — delivery cost and
+the free-delivery threshold, delivery/lead times, returns & refunds, and
+warranty — from **version-controlled facts** in `lib/facts.js`, not from an
+uploaded knowledge file.
+
+**Why this exists.** Sarah was giving wrong delivery/returns/lead-time answers
+(e.g. "returns are 14 days", "I can't provide delivery costs") because a knowledge
+file attached to the assistant was never actually read. In Vapi an uploaded
+`.txt` is **not** injected into the prompt — it is only consulted when wired
+into a *query tool* (a vector knowledge base), and even then semantic retrieval
+is unreliable for short policy phrases. Product prices are correct because they
+come from the `lookup_product` **function tool**, which returns a fixed spoken
+string. This endpoint gives the policy facts the same deterministic treatment:
+a `lookup_policy` function tool that can't fail to "retrieve."
+
+The correct facts live in `lib/facts.js` — edit them there (free UK delivery
+over £500 and 30-day returns are pre-filled; lead times, sub-threshold delivery
+cost and warranty are `null` until you fill them in, and any `null` is spoken
+as a graceful "let me confirm that for you" rather than a guess). Values can
+also be overridden with env vars (`DELIVERY_FREE_THRESHOLD`,
+`DELIVERY_STANDARD_COST`, `RETURNS_WINDOW_DAYS`, `LEAD_TIME_*`, `WARRANTY_YEARS`).
 
 ### `POST /api/shopify-webhook`
 
@@ -94,9 +120,25 @@ npm test
 suite covering search, spoken-answer formatting, availability wording and HMAC
 verification.
 
-## Register the Vapi tool
+## Register the Vapi tools
 
-See `scripts/register-vapi-tool.sh` — creates the `lookup_product` function
-tool, points its server URL at the deployed `/api/vapi-tool`, attaches it to
-the assistant, and appends the "call `lookup_product` before answering"
-instruction to the system prompt.
+- `scripts/register-vapi-tool.sh` — creates the `lookup_product` function tool
+  (server URL → `/api/vapi-tool`), attaches it, and appends the "call
+  `lookup_product` before answering" instruction to the system prompt.
+- `scripts/register-vapi-facts-tool.sh` — same for the `lookup_policy` function
+  tool (server URL → `/api/vapi-facts`), appending a "call `lookup_policy` for
+  delivery/returns/lead-time/warranty — never guess" instruction.
+
+## Diagnose & clean up the assistant
+
+- `scripts/inspect-vapi-assistant.sh` — read-only dump of the assistant's
+  system prompt, attached tools, and knowledge-base/file wiring. Confirms
+  whether an uploaded facts file is actually retrievable (wired into a query
+  tool) or just sitting unused.
+- `scripts/audit-vapi-files.sh` — lists every file in the Vapi account, flags
+  duplicate names (e.g. the nine `kymra-sarah-knowledge-base-v7.txt` copies),
+  and with `--delete` removes the duplicates (keeps the newest of each name and
+  refuses to delete any file still referenced by a query tool).
+
+All four scripts talk to `api.vapi.ai`, so run them from a machine with normal
+outbound network access (see `DEPLOY.md`).

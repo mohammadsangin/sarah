@@ -73,6 +73,49 @@ appends to the assistant's system prompt:
 > If the caller asks about products, prices, availability, or specs, call
 > lookup_product before answering — never guess.
 
+## 3b. Register the company-facts tool (fixes wrong delivery/returns answers)
+
+This is what stops Sarah guessing delivery cost, lead times and returns. It
+registers a second function tool, `lookup_policy`, backed by `/api/vapi-facts`,
+whose answers come from version-controlled facts in `lib/facts.js` (free UK
+delivery over £500 and 30-day returns are pre-filled; fill in the rest there or
+via the env vars in `.env.example`).
+
+```bash
+export VAPI_PRIVATE_KEY="d928aa47-****"
+export VAPI_FACTS_URL="https://<deployment>/api/vapi-facts"
+export ASSISTANT_ID="f67cfb35-5f40-430d-b70f-718940af7a43"   # full UUID
+
+./scripts/register-vapi-facts-tool.sh
+```
+
+It appends to the system prompt:
+
+> If the caller asks about delivery cost, delivery time or lead times, returns,
+> refunds, or warranty, call lookup_policy before answering — never guess these
+> and never say you cannot provide them.
+
+**Diagnose first (optional but recommended):** confirm the old knowledge file
+was never actually retrievable, and see the assistant's current wiring:
+
+```bash
+./scripts/inspect-vapi-assistant.sh
+```
+
+**Clean up the duplicate knowledge files** (the nine
+`kymra-sarah-knowledge-base-v7.txt` copies, plus the now-unused
+`kymra-customer-facts-v1.txt`). List first, then delete:
+
+```bash
+./scripts/audit-vapi-files.sh                # list everything, flag duplicates
+./scripts/audit-vapi-files.sh --plan         # preview the cleanup (dry run)
+./scripts/audit-vapi-files.sh --delete       # remove dupes, keep newest per name
+```
+
+Once `lookup_policy` is live you can also detach/delete the old facts file
+entirely — Sarah no longer depends on any uploaded knowledge file for these
+answers.
+
 ## 4. Register the Shopify webhook
 
 In Shopify admin → **Settings → Notifications → Webhooks** (or via the Admin
