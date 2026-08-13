@@ -48,7 +48,11 @@ function extractQuery(call) {
     }
   }
   if (args && typeof args === 'object') {
-    return args.query || args.q || args.search || args.text || args.topic || '';
+    // Prefer the free-text question; fold in product/maker if given separately
+    // so lead-time answers can pick the right maker.
+    const base = args.query || args.q || args.search || args.text || args.topic || '';
+    const maker = args.maker || args.product || args.collection || '';
+    return [base, maker].filter(Boolean).join(' ').trim();
   }
   return '';
 }

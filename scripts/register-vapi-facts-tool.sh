@@ -23,20 +23,20 @@ set -euo pipefail
 
 API="https://api.vapi.ai"
 AUTH="Authorization: Bearer ${VAPI_PRIVATE_KEY}"
-INSTRUCTION="If the caller asks about delivery cost, delivery time or lead times, returns, refunds, or warranty, call lookup_policy before answering — never guess these and never say you cannot provide them."
+INSTRUCTION="For delivery cost or the free-delivery threshold, delivery time or lead times, returns or refunds, warranty, whether a bulb is included, or VAT, call lookup_policy before answering — never guess these and never say you cannot provide them. Lead times vary by maker, so include the product name or maker (for example Soho or Mullan) in the query when you call it. Speak the tool's result as-is; do not add figures of your own."
 
 echo "==> Creating the lookup_policy function tool..."
 TOOL_PAYLOAD=$(jq -n --arg url "$VAPI_FACTS_URL" '{
   type: "function",
   function: {
     name: "lookup_policy",
-    description: "Look up official Kymra Lighting company facts: delivery cost and free-delivery threshold, delivery lead times, returns and refunds policy, and warranty. Call this for any such question instead of guessing.",
+    description: "Look up official Kymra Lighting company facts: delivery cost and the free-delivery threshold, delivery lead times (which vary by maker — Soho stock vs Mullan made-to-order), returns and refunds, warranty, whether a bulb is included, and VAT. Call this for any such question instead of guessing.",
     parameters: {
       type: "object",
       properties: {
         query: {
           type: "string",
-          description: "The caller'\''s question, e.g. '\''how much is delivery'\'', '\''what'\''s your returns policy'\'', '\''how long is the warranty'\''."
+          description: "The caller'\''s question, e.g. '\''how much is delivery'\'', '\''how long for a Mullan pendant'\'', '\''what'\''s your returns policy'\''. For lead-time questions, include the product name or maker if known."
         }
       },
       required: ["query"]

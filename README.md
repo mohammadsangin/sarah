@@ -48,9 +48,16 @@ specs) — never raw JSON or HTML, never a line break. Searches product `title`,
 
 Same Vapi `ServerMessageToolCalls` shape and same **HTTP 200 always** contract
 as `/api/vapi-tool`, but answers company-policy questions — delivery cost and
-the free-delivery threshold, delivery/lead times, returns & refunds, and
-warranty — from **version-controlled facts** in `lib/facts.js`, not from an
-uploaded knowledge file.
+the free-delivery threshold, delivery/lead times, returns & refunds, warranty,
+whether a bulb is included, and VAT — from **version-controlled facts** in
+`lib/facts.js`, not from an uploaded knowledge file.
+
+Lead times are **maker-dependent** and encoded as explicit logic (not a single
+value): Soho stock (2–3 working days) with the Palace Collection sockets as the
+made-to-order exception (~5 weeks); Mullan is made to order across its whole
+range and always quoted in weeks — standard 2–3, ceramics 4–6, bespoke 8–10,
+with the clock starting from payment. An unknown maker gets the honest range
+and a "which piece?" follow-up rather than a guess.
 
 **Why this exists.** Sarah was giving wrong delivery/returns/lead-time answers
 (e.g. "returns are 14 days", "I can't provide delivery costs") because a knowledge
@@ -62,12 +69,15 @@ come from the `lookup_product` **function tool**, which returns a fixed spoken
 string. This endpoint gives the policy facts the same deterministic treatment:
 a `lookup_policy` function tool that can't fail to "retrieve."
 
-The correct facts live in `lib/facts.js` — edit them there (free UK delivery
-over £500 and 30-day returns are pre-filled; lead times, sub-threshold delivery
-cost and warranty are `null` until you fill them in, and any `null` is spoken
-as a graceful "let me confirm that for you" rather than a guess). Values can
-also be overridden with env vars (`DELIVERY_FREE_THRESHOLD`,
-`DELIVERY_STANDARD_COST`, `RETURNS_WINDOW_DAYS`, `LEAD_TIME_*`, `WARRANTY_YEARS`).
+The facts live in `lib/facts.js`. Confirmed values are filled in (free UK
+delivery over £500, 30-day returns via the returns portal, not VAT registered,
+maker lead times, Soho bulbs sold separately). Genuinely-variable values are
+handled honestly rather than guessed: the sub-£500 delivery charge is unknown
+(`null` → Sarah offers to confirm), and warranty varies by product (spoken as
+"it varies — most Soho fittings 2 years, some switches up to 15" plus an offer
+to confirm, never one committed figure). Numbers can be overridden with env
+vars (`DELIVERY_FREE_THRESHOLD`, `DELIVERY_STANDARD_COST`, `RETURNS_WINDOW_DAYS`,
+`WARRANTY_EXAMPLES`).
 
 ### `POST /api/shopify-webhook`
 

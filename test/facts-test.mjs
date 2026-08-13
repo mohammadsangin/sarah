@@ -1,10 +1,11 @@
-// Network-free checks of the company-facts logic (delivery, returns, lead
-// times, warranty) served by /api/vapi-facts via lib/facts.js.
+// Network-free checks of the company-facts logic (delivery, lead times,
+// returns, warranty, bulbs, VAT) served by /api/vapi-facts via lib/facts.js.
 // Run: node test/facts-test.mjs
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 
 const facts = require('../lib/facts.js');
+const A = (q) => facts.buildFactsAnswer(q);
 
 let failures = 0;
 function check(name, cond, detail) {
@@ -14,54 +15,86 @@ function check(name, cond, detail) {
 }
 
 function main() {
-  // --- delivery: the free-over-£500 fact Sarah used to refuse to state ---
-  const d1 = facts.buildFactsAnswer('how much is delivery?');
-  console.log('  Q: "how much is delivery?"\n  A:', d1);
-  check('delivery answer states free over £500', /free on all orders over £500/i.test(d1));
-  check('delivery answer never says "can\'t provide"', !/can't provide|cannot provide/i.test(d1));
-  check('delivery answer has no line breaks', !/[\r\n]/.test(d1));
+  // ── DELIVERY (cost) — the free-over-£500 fact Sarah used to refuse ──
+  const d1 = A('how much is delivery?');
+  console.log('  Q: how much is delivery?\n  A:', d1);
+  check('delivery states free over £500', /free on all orders over £500/i.test(d1));
+  check('delivery never says "can\'t provide"', !/can'?t provide|cannot provide/i.test(d1));
+  check('answers have no line breaks', !/[\r\n]/.test(d1));
+  check('"free delivery?" → delivery', /free on all orders over £500/i.test(A('do you do free delivery?')));
+  check('"shipping cost" → delivery', /£500/i.test(A('what does shipping cost')));
 
-  // Phrasing variants all route to delivery.
-  check('"free delivery?" routes to delivery', /free on all orders over £500/i.test(facts.buildFactsAnswer('do you do free delivery?')));
-  check('"shipping cost" routes to delivery', /£500/i.test(facts.buildFactsAnswer('what does shipping cost')));
-  check('"how long to arrive" routes to delivery', /£500|delivery/i.test(facts.buildFactsAnswer('how long will it take to arrive?')));
+  // ── LEAD TIMES — maker dependent ──
+  const soho = A('how long for a Soho wall light?');
+  console.log('  Q: how long for a Soho wall light?\n  A:', soho);
+  check('Soho stocked → 2 to 3 working days', /2 to 3 working days/i.test(soho));
 
-  // --- returns: the 30-day fact (Sarah previously said 14) ---
-  const r1 = facts.buildFactsAnswer("what's your returns policy?");
-  console.log('  Q: "what\'s your returns policy?"\n  A:', r1);
-  check('returns answer says 30 days', /within 30 days/i.test(r1));
-  check('returns answer does NOT say 14 days', !/14 days/i.test(r1));
-  check('"can I get a refund" routes to returns', /30 days/i.test(facts.buildFactsAnswer('can I get a refund')));
-  check('"send it back" routes to returns', /30 days/i.test(facts.buildFactsAnswer('can I send it back?')));
+  const palace = A('when will the Palace Collection socket arrive?');
+  console.log('  Q: Palace socket lead time\n  A:', palace);
+  check('Palace sockets → approximately 5 weeks', /5 weeks/i.test(palace));
 
-  // --- unset facts fall back gracefully, never a guess ---
-  const w1 = facts.buildFactsAnswer('is there a warranty?');
-  console.log('  Q: "is there a warranty?"\n  A:', w1);
-  // With WARRANTY_YEARS unset, we must NOT invent a number.
-  check('unset warranty does not invent a number', !/\b\d+-year/i.test(w1) || facts.FACTS.warranty.years != null);
-  check('unset warranty offers to confirm', /confirm|check/i.test(w1) || facts.FACTS.warranty.years != null);
+  const mullan = A('how long for a Mullan pendant?');
+  console.log('  Q: how long for a Mullan pendant?\n  A:', mullan);
+  check('Mullan standard → 2 to 3 weeks', /2 to 3 weeks/i.test(mullan));
+  check('Mullan is made to order', /made to order/i.test(mullan));
+  check('Mullan NEVER quoted in days', !/\bdays\b/i.test(mullan));
+  check('Mullan clock starts at payment', /payment is received/i.test(mullan));
 
-  // --- unclassifiable query gets a helpful menu, not an error ---
-  const u1 = facts.buildFactsAnswer('is the moon made of cheese');
-  check('unknown topic returns a helpful string', typeof u1 === 'string' && u1.length > 0);
-  check('unknown topic offers delivery/returns/etc', /delivery|returns|warranty/i.test(u1));
+  const mullanCeramic = A('lead time on a Mullan ceramic light');
+  check('Mullan ceramics → 4 to 6 weeks', /4 to 6 weeks/i.test(mullanCeramic));
+  check('Mullan ceramics not in days', !/\bdays\b/i.test(mullanCeramic));
 
-  // --- empty query handled (no crash) ---
-  const e1 = facts.buildFactsAnswer('');
-  check('empty query -> non-empty string', typeof e1 === 'string' && e1.length > 0);
+  const mullanBespoke = A('how long for a bespoke Mullan piece');
+  check('Mullan bespoke → 8 to 10 weeks', /8 to 10 weeks/i.test(mullanBespoke));
 
-  // --- money formatting: whole pounds have no pence ---
-  check('money() formats whole pounds without pence', facts._internal.money(500) === '£500');
-  check('money() formats pence when present', facts._internal.money(4.95) === '£4.95');
-  check('money() handles null', facts._internal.money(null) === null);
+  const unknownMaker = A('how long will delivery take?');
+  console.log('  Q: how long will delivery take? (no maker)\n  A:', unknownMaker);
+  check('unknown maker gives the range', /2 to 3 working days/i.test(unknownMaker) && /weeks/i.test(unknownMaker));
+  check('unknown maker asks which piece', /which piece|which item/i.test(unknownMaker));
 
-  // --- optional facts, when configured, are spoken ---
-  // Prove the composition works if the store fills in the standard cost.
+  // ── RETURNS — 30 days, portal, no "money-back guarantee" ──
+  const r1 = A("what's your returns policy?");
+  console.log('  Q: returns policy?\n  A:', r1);
+  check('returns says 30 days', /within 30 days/i.test(r1));
+  check('returns does NOT say 14 days', !/14 days/i.test(r1));
+  check('returns mentions the portal', /returns portal/i.test(r1));
+  check('returns avoids "money-back guarantee"', !/money[- ]back guarantee/i.test(r1));
+  check('"can I send it back" → returns', /30 days/i.test(A('can I send it back?')));
+
+  // ── WARRANTY — varies, never one committed figure ──
+  const w1 = A('is there a warranty?');
+  console.log('  Q: warranty?\n  A:', w1);
+  check('warranty says it varies', /varies/i.test(w1));
+  check('warranty offers to confirm', /confirm/i.test(w1));
+
+  // ── BULBS ──
+  const b1 = A('does it come with a bulb?');
+  console.log('  Q: bulb included?\n  A:', b1);
+  check('bulbs: Soho sold separately', /sold separately/i.test(b1));
+  const b2 = A('is a bulb included with the Mullan light?');
+  check('bulbs: Mullan → check product page', /product page/i.test(b2));
+
+  // ── VAT ──
+  const v1 = A('do you charge VAT?');
+  console.log('  Q: VAT?\n  A:', v1);
+  check('VAT: not registered', /isn'?t VAT registered|not VAT registered/i.test(v1));
+  check('VAT: no invoice issued', /don'?t issue a VAT invoice|no VAT invoice/i.test(v1));
+
+  // ── robustness ──
+  check('empty query → non-empty string', typeof A('') === 'string' && A('').length > 0);
+  const u1 = A('is the moon made of cheese');
+  check('unknown topic → helpful menu', /delivery|returns|warranty|vat/i.test(u1));
+
+  // ── money formatting ──
+  check('money whole pounds no pence', facts._internal.money(500) === '£500');
+  check('money with pence', facts._internal.money(4.95) === '£4.95');
+  check('money null', facts._internal.money(null) === null);
+
+  // ── optional sub-threshold cost, when configured, is spoken ──
   const savedStd = facts.FACTS.delivery.standardCost;
   facts.FACTS.delivery.standardCost = 4.95;
-  const d2 = facts.buildFactsAnswer('how much is delivery');
-  check('configured standard cost is spoken', /standard uk delivery is £4\.95/i.test(d2));
-  facts.FACTS.delivery.standardCost = savedStd; // restore
+  check('configured standard cost is spoken', /standard uk delivery is £4\.95/i.test(A('delivery cost')));
+  facts.FACTS.delivery.standardCost = savedStd;
 
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : failures + ' CHECK(S) FAILED'}`);
   process.exit(failures === 0 ? 0 : 1);
