@@ -277,16 +277,22 @@ async function main() {
   const toolIds = Array.isArray(model.toolIds) ? model.toolIds : [];
   const droppedToolIds = [];
   const keptToolIds = [];
+  const keptToolLabels = [];
   for (const tid of toolIds) {
     let tool;
     try { tool = await api(`/tool/${tid}`, { key }); } catch { tool = null; }
     const label = tool ? ((tool.function && tool.function.name) || tool.name || tool.type) : tid;
     if (tool && isTransferTool(tool)) droppedToolIds.push(`${label} [${tid}]`);
-    else keptToolIds.push(tid);
+    else { keptToolIds.push(tid); keptToolLabels.push(label); }
   }
+  for (const t of keptInline) keptToolLabels.push((t.function && t.function.name) || t.name || t.type);
   console.log('  tools dropped:',
     [...droppedInline.map((t) => (t.function && t.function.name) || t.type), ...droppedToolIds].join(', ') || '(none — no transfer tool found)');
-  console.log('  toolIds kept:', keptToolIds.length ? keptToolIds.join(', ') : '(none)');
+  console.log('  tools kept on text copy:', keptToolLabels.length ? keptToolLabels.join(', ') : '(none)');
+  for (const need of ['lookup_products', 'lookup_policy']) {
+    const present = keptToolLabels.some((l) => String(l).toLowerCase() === need);
+    console.log(`    ${present ? '✓' : '✗ MISSING'} ${need}${present ? '' : ' — will not be on the text copy (verify with verify-assistant-tools.mjs)'}`);
+  }
 
   // ---- sanity warnings ----
   const problems = [];
