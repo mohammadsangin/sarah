@@ -149,6 +149,15 @@ verification.
   duplicate names (e.g. the nine `kymra-sarah-knowledge-base-v7.txt` copies),
   and with `--delete` removes the duplicates (keeps the newest of each name and
   refuses to delete any file still referenced by a query tool).
+- `scripts/split-voice-text-assistants.mjs` — splits the single assistant into a
+  voice assistant (the original, keeps the phone number + `transfer_to_human`)
+  and a `Sarah — Text` copy for the chat widget, so voice/text escalation rules
+  never contradict. It removes the "in text chat" sections from the voice prompt,
+  removes the "on a call" and "Pronunciation Rules" sections plus the
+  `transfer_to_human` tool from the text copy, and copies everything else
+  (identity, price rule, facts, general rules, `lookup_products`) unchanged.
+  Dry-run by default; `--apply` to write, `--selftest` to check the prompt
+  surgery offline. Requires Node 18+.
 
 All four scripts talk to `api.vapi.ai`, so run them from a machine with normal
 outbound network access (see `DEPLOY.md`).
